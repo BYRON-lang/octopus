@@ -1,0 +1,158 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ALL_CATEGORIES, getWebsites } from '../../services/websiteService';
+import WebsiteCard from '../../components/WebsiteCard.astro';
+
+// Generate static paths for all categories
+export async function getStaticPaths() {
+  return ALL_CATEGORIES.map(category => ({
+    params: {
+      slug: category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
+    },
+    props: { category }
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Find matching category
+const category = ALL_CATEGORIES.find(
+  cat => cat.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') === slug
+);
+
+if (!category) {
+  throw new Error("Category not found"); // Astro will show 500/404
+}
+
+// Fetch websites for this category
+let websites: any[] = [];
+try {
+  const result = await getWebsites({ category });
+  websites = result.websites || [];
+} catch (error) {
+  console.error('Error fetching websites:', error);
+  websites = [];
+}
+---
+
+<BaseLayout title={`${category} | Gridrr`}>
+  <main class="page-container">
+    <div class="content-wrapper">
+      <div class="pill-container">
+        <div class="pill">
+          <span class="category-text">{category}</span>
+          <a href="/categories" class="close-icon" aria-label="Close and return to categories">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 16 16">
+              <path fill="currentColor" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Website Grid -->
+      <div class="websites-grid">
+        {websites.length > 0 ? (
+          websites.map(website => (
+            <WebsiteCard
+              id={website.id}
+              name={website.name}
+              videoUrl={website.videoUrl}
+              thumbnailUrl={website.thumbnailUrl}
+              categories={website.categories}
+            />
+          ))
+        ) : (
+          <p>No websites found in this category.</p>
+        )}
+      </div>
+    </div>
+  </main>
+  
+  <style>
+    .page-container {
+      width: 100%;
+      max-width: 1900px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+      min-height: 40vh;
+    }
+    
+    .content-wrapper {
+      width: 100%;
+    }
+    
+    .pill-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    
+    .pill {
+      background: transparent;
+      color: #111827;
+      padding: 0.75rem 2rem;
+      border: 2px solid #000000;
+      border-radius: 9999px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-transform: capitalize;
+      letter-spacing: 0.03em;
+      line-height: 1.1;
+    }
+    
+    .category-text {
+      display: inline-block;
+    }
+    
+    .close-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: all 0.2s ease;
+      width: 50px;
+      height: 50px;
+      margin-left: 0.75rem;
+      margin-right: -0.75rem;
+    }
+    
+    .close-icon:hover {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    
+    .close-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .websites-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      padding: 2rem 0;
+      width: 100%;
+      max-width: 1900px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 1200px) {
+      .websites-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 1.5rem 2rem;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .websites-grid {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 1rem;
+        gap: 1.5rem;
+      }
+    }
+  </style>
+</BaseLayout>

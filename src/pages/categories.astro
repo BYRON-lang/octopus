@@ -1,0 +1,210 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ALL_CATEGORIES, getCategoryCounts } from '../services/websiteService';
+
+// Get category counts
+const categoryCounts = await getCategoryCounts();
+
+// Define category groups
+const industryCategories = ALL_CATEGORIES.slice(0, 27);
+const productCategories = ALL_CATEGORIES.slice(27, 52);
+const styleCategories = ALL_CATEGORIES.slice(52);
+
+const categoryGroups = [
+  { 
+    name: 'Industry', 
+    categories: industryCategories
+  },
+  { 
+    name: 'Product Type', 
+    categories: productCategories
+  },
+  { 
+    name: 'Style', 
+    categories: styleCategories
+  }
+];
+
+// Process categories for each group
+const processedGroups = categoryGroups.map(group => {
+  const categories = group.categories
+    .map(category => {
+      const count = categoryCounts.find(c => c.name === category)?.count || 0;
+      return {
+        name: category,
+        slug: category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
+        count
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    ...group,
+    categories
+  };
+}).filter(group => group.categories.length > 0);
+---
+
+<BaseLayout title="Browse - Gridrr">
+  <div class="browse-page">
+  <div class="browse-container">
+    <div class="browse-content">
+      <div class="header-section">
+        <div class="header-content">
+          <h1>Category</h1>
+          <p class="subtitle">
+            Browse websites <br/>
+            by categories
+          </p>
+        </div>
+      </div>
+      
+      <div class="categories-grid">
+        {processedGroups.map((group, groupIndex) => (
+          <div key={groupIndex} class="category-group">
+            <h3 class="group-title">{group.name}</h3>
+            <div class="category-items">
+              {group.categories.map((category, index) => (
+                <a 
+                  href={`/category/${category.slug}`} 
+                  class="category-item"
+                >
+                  <span class="category-name">{category.name}</span>
+                  <span class="category-count">{category.count}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <style>
+    :root {
+      --text-primary: #1a1a1a;
+      --text-secondary: #666;
+      --border-color: #eee;
+      --bg-tertiary: #f5f5f5;
+      --transition-speed: 0.2s;
+    }
+    
+    .browse-page {
+      margin: 0;
+      padding: 0;
+      font-family: 'Rethink Sans', system-ui, -apple-system, sans-serif;
+      color: var(--text-primary);
+      background: white;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .browse-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      min-height: calc(100vh - 4rem);
+    }
+
+    .browse-content {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    
+    .header-section {
+      margin-bottom: 4rem;
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .header-section h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      margin: 0;
+      padding: 0;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .header-section .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin: 0;
+      padding: 0;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    .categories-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      width: 100%;
+    }
+
+    .category-group {
+      width: 100%;
+    }
+
+    .group-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 1rem 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .category-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .category-item {
+      text-decoration: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      transition: all var(--transition-speed) ease;
+    }
+
+    .category-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border-color: var(--border-color);
+    }
+
+    .category-name {
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .category-count {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.5rem;
+      border-radius: 1rem;
+      min-width: 2rem;
+      text-align: center;
+      font-weight: 500;
+    }

@@ -1,0 +1,191 @@
+---
+import type { Website } from '../services/websiteService';
+
+interface WebsiteCardProps extends Website {
+  muted?: boolean;
+  'video-url'?: string;
+  'thumbnail-url'?: string;
+}
+
+// Handle both direct props and web component attributes
+const props = {
+  ...Astro.props,
+  videoUrl: Astro.props['video-url'] || Astro.props.videoUrl,
+  thumbnailUrl: Astro.props['thumbnail-url'] || Astro.props.thumbnailUrl || '',
+  name: Astro.props.name || '',
+  id: Astro.props.id || ''
+};
+
+const { id, name, videoUrl, thumbnailUrl, muted = true } = props;
+---
+
+<div class="card-container">
+  <a href={`/website/${id}`} class="card-link">
+    <div class="media-container">
+      {videoUrl ? (
+        // Show video with hover play functionality
+        <>
+          <video
+            src={videoUrl}
+            loop
+            playsinline
+            muted={muted}
+            preload="metadata"
+            class="card-media"
+            aria-hidden="true"
+            style="object-fit: cover;"
+          ></video>
+        </>
+      ) : (
+        // Fallback for no video
+        <div class="no-preview">No Preview</div>
+      )}
+    </div>
+    <div class="name-container">
+      <span class="website-name">{name}</span>
+    </div>
+    <div class="icon-container">
+      <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0" clip-rule="evenodd"/>
+      </svg>
+    </div>
+  </a>
+</div>
+
+<script>
+  // This script will be executed for each card
+  (function() {
+    const card = document.currentScript.closest('.card-container');
+    if (!card) return;
+    
+    const video = card.querySelector('.hover-video');
+    if (!video) return;
+    
+    // Pause video initially
+    video.pause();
+    
+    // Play on hover
+    card.addEventListener('mouseenter', () => {
+      video.play().catch(e => console.log('Video play failed:', e));
+    });
+    
+    // Pause when not hovering
+    card.addEventListener('mouseleave', () => {
+      video.pause();
+      video.currentTime = 0;
+    });
+  })();
+</script>
+
+<style>
+  .card-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .media-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .card-media {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border: 1px solid #e5e7eb;
+    transition: opacity 0.3s ease;
+  }
+  
+  .no-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  video {
+    transition: transform 0.2s ease;
+  }
+  
+  .card-container:hover video {
+    transform: scale(1.02);
+  }
+
+  .pill-container {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    display: inline-flex;
+    max-width: calc(100% - 32px);
+    z-index: 1;
+  }
+
+  .name-container {
+    position: absolute;
+    bottom: 20px; /* Align with arrow */
+    left: 16px; /* Position from left edge */
+    right: 60px; /* Make room for the arrow */
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    justify-content: flex-start; /* Align to left */
+    width: auto;
+    max-width: calc(100% - 80px); /* Account for arrow and spacing */
+  }
+
+  .website-name {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111827;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 6px 18px;
+    border-radius: 9999px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    pointer-events: auto;
+    border: none;
+    backdrop-filter: blur(4px);
+  }
+
+  .icon-container {
+    position: absolute;
+    bottom: 20px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .arrow-icon {
+    width: 18px;
+    height: 18px;
+    color: #111827;
+  }
+</style>

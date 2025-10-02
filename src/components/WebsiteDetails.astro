@@ -1,0 +1,445 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import type { Website } from '../services/websiteService';
+
+interface Props {
+  website: Website;
+}
+
+const { website } = Astro.props;
+
+if (!website) {
+  return Astro.redirect('/404');
+}
+
+// Import the incrementWebsiteViews function from the website service
+import { incrementWebsiteViews } from '../services/websiteService';
+
+// Increment view count when component mounts
+const updatedWebsite = await (async () => {
+  try {
+    // Call the incrementWebsiteViews function directly
+    await incrementWebsiteViews(website.id);
+    
+    // Return the website data with an incremented view count
+    return {
+      ...website,
+      views: (website.views || 0) + 1
+    };
+  } catch (error) {
+    console.error('Error updating view count:', error);
+    return website;
+  }
+})();
+---
+
+<BaseLayout title={`${website.name} | Gridrr`}>
+  <main class="details-container">
+    <div class="content-wrapper">
+      <a href="/" class="back-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="back-arrow">
+          <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back
+      </a>
+      
+      <div class="page-content">
+        {updatedWebsite.videoUrl && (
+          <div class="video-wrapper">
+            <video 
+              src={updatedWebsite.videoUrl}
+              autoplay
+              loop
+              muted
+              playsinline
+              class="website-video"
+            ></video>
+            <div class="video-loading" id="video-loading">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        )}
+        <div class="website-info">
+          <div class="title-row">
+            <div class="title-content">
+              <h1 class="website-name">{website.name}</h1>
+              <div class="right-section">
+                {website.categories && website.categories.length > 0 && (
+                  <div class="info-section">
+                    <div class="section-title">Category</div>
+                    <ul class="info-list">
+                      {website.categories.map((category, index) => (
+                        <li key={`cat-${index}`} class="info-item">{category}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {website.builtWith && (
+                  <div class="info-section">
+                    <div class="section-title">Framework</div>
+                    <ul class="info-list">
+                      {typeof website.builtWith === 'string' ? (
+                        <li class="info-item">{website.builtWith}</li>
+                      ) : (
+                        website.builtWith.map((item, index) => (
+                          <li key={`built-${index}`} class="info-item">{item}</li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          {console.log('Website data:', { 
+            name: website.name, 
+            url: website.url,
+            framework: website.framework,
+            hasFramework: !!website.framework,
+            frameworkType: typeof website.framework,
+            allFields: Object.keys(website),
+            fullWebsiteData: website
+          })}
+          
+          {website.url && (
+            <a 
+              href={website.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="visit-button"
+              data-website-id={website.id}
+            >
+              Visit
+            </a>
+          )}
+          
+          <script>
+            // Client-side script to handle the visit button click
+            document.addEventListener('DOMContentLoaded', () => {
+              const visitButton = document.querySelector('.visit-button');
+              if (!visitButton) return;
+              
+              visitButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const url = new URL(visitButton.href);
+                url.searchParams.append('ref', 'gridrr');
+                
+                try {
+                  // Send click data to your analytics endpoint
+                  await fetch('/api/track-click', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      websiteId: visitButton.dataset.websiteId,
+                      url: visitButton.href,
+                      referer: 'gridrr',
+                      timestamp: new Date().toISOString(),
+                    }),
+                  });
+                } catch (error) {
+                  console.error('Error tracking click:', error);
+                } finally {
+                  // Open the link after tracking
+                  window.open(url.toString(), '_blank');
+                }
+              });
+            });
+          </script>
+          {(() => {
+            try {
+              if (website.uploadedAt) {
+                const date = new Date(website.uploadedAt);
+                if (!isNaN(date.getTime())) {
+                  return (
+                    <div class="meta-info">
+                      <p class="date-added">
+                        Added on {date.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                      {updatedWebsite.views !== undefined && (
+                        <p class="view-count">{updatedWebsite.views.toLocaleString()} views</p>
+                      )}
+                    </div>
+                  );
+                } else {
+                  console.warn('Invalid date format for uploadedAt:', website.uploadedAt);
+                }
+              } else {
+                console.warn('No uploadedAt field found in website data');
+              }
+              return null;
+            } catch (error) {
+              console.error('Error formatting date:', error);
+              return null;
+            }
+          })()}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    .details-container {
+      width: 100%;
+      max-width: 1900px;
+      margin: 0 auto;
+      padding: 24px 24px;
+    }
+    
+    .content-wrapper {
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #4B5563;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      margin-bottom: 24px;
+      transition: color 0.2s ease;
+    }
+    
+    .back-button:hover {
+      color: #1F2937;
+    }
+    
+    .back-arrow {
+      width: 20px;
+      height: 20px;
+      color: currentColor;
+    }
+    
+    .page-content {
+      width: 100%;
+      margin-top: 24px;
+    }
+    
+    .website-info {
+      width: 90%;
+      max-width: 1200px;
+      margin: 16px auto 0;
+    }
+    
+    .title-row {
+      margin-bottom: 8px;
+      position: relative;
+    }
+    
+    .title-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    
+    .website-name {
+      margin: 0 0 8px 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1F2937;
+      text-align: left;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .right-section {
+      position: absolute;
+      right: 0;
+      top: 0;
+      text-align: left;
+    }
+    
+    .info-section {
+      margin-bottom: 16px;
+    }
+    
+    .info-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      color: #6B7280;
+      font-size: 0.875rem;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    
+    .info-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      text-align: left;
+    }
+    
+    .info-item {
+      color: #1F2937;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+    
+    .meta-info {
+      margin: 16px 0 0 0;
+    }
+    
+    .date-added, .view-count {
+      margin: 0;
+      color: #6B7280;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+    }
+    
+    .view-count {
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    
+    .visit-button {
+      display: inline-block;
+      padding: 8px 24px;
+      background-color: #000;
+      color: white;
+      text-decoration: none;
+      border-radius: 9999px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1px solid #000;
+    }
+    
+    .visit-button:hover {
+      background-color: #1a1a1a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .video-wrapper {
+      position: relative;
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+      overflow: hidden;
+      background-color: #000;
+    }
+    
+    .website-video {
+      width: 100%;
+      height: auto;
+      max-height: 80vh;
+      display: block;
+      margin: 0 auto;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      object-fit: contain;
+    }
+    
+    .video-loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.5);
+      transition: opacity 0.3s ease;
+    }
+    
+    .video-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Hide video controls in WebKit browsers */
+    .website-video::-webkit-media-controls {
+      display: none !important;
+    }
+    
+    /* Hide video controls in Firefox */
+    .website-video::-moz-media-controls {
+      display: none !important;
+    }
+    
+    /* Hide video controls in Edge */
+    .website-video::-ms-media-controls {
+      display: none !important;
+    }
+    
+    @media (min-width: 1536px) {
+      .details-container {
+        padding: 32px 32px;
+      }
+    }
+  </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const video = document.querySelector('.website-video');
+    const loadingElement = document.getElementById('video-loading');
+    
+    if (video) {
+      // Force mute (in case autoplay policies change)
+      video.muted = true;
+      
+      // Handle when video can play
+      video.addEventListener('canplay', () => {
+        video.play().then(() => {
+          video.style.opacity = '1';
+          if (loadingElement) {
+            loadingElement.style.display = 'none';
+          }
+        }).catch(error => {
+          console.error('Error playing video:', error);
+          if (loadingElement) {
+            loadingElement.style.display = 'none';
+          }
+        });
+      });
+      
+      // Handle video errors
+      video.addEventListener('error', () => {
+        console.error('Error loading video');
+        if (loadingElement) {
+          loadingElement.style.display = 'none';
+        }
+      });
+      
+      // Fallback in case canplay doesn't fire
+      setTimeout(() => {
+        if (video.readyState >= 3) { // HAVE_FUTURE_DATA or more
+          video.style.opacity = '1';
+          if (loadingElement) {
+            loadingElement.style.display = 'none';
+          }
+        }
+      }, 2000);
+    } else if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+  });
+</script>
+</BaseLayout>

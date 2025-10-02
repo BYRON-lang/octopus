@@ -1,0 +1,22 @@
+---
+import WebsiteDetails from '../../components/WebsiteDetails.astro';
+import { getWebsites } from '../../services/websiteService';
+
+// Generate paths at build time
+export async function getStaticPaths() {
+  const { websites } = await getWebsites({ 
+    limit: 1000, // Adjust based on expected number of websites
+    offset: 0 
+  });
+  
+  return websites.map(website => ({
+    params: { id: website.id },
+    props: { website },
+  }));
+}
+
+const { id } = Astro.params;
+const website = Astro.props.website;
+---
+
+<WebsiteDetails website={website} />

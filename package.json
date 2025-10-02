@@ -9,6 +9,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.14.1"
+    "@astrojs/node": "^9.4.4",
+    "@types/node": "^24.6.2",
+    "astro": "^5.14.1",
+    "firebase": "^12.3.0"
   }
 }
