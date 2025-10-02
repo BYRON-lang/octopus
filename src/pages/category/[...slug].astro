@@ -3,8 +3,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { ALL_CATEGORIES, getWebsites } from '../../services/websiteService';
 import WebsiteCard from '../../components/WebsiteCard.astro';
 
-// Generate static paths for all categories
+// Generate static paths for most popular categories (limit to 20 for initial build)
+// The rest will be generated on-demand
+const POPULAR_CATEGORY_LIMIT = 20;
+
 export async function getStaticPaths() {
+  // For production, pre-render only the most popular categories
+  if (import.meta.env.PROD) {
+    // Sort categories by popularity (you'll need to implement getPopularCategories)
+    // If you don't have popularity data, just take the first N categories
+    const popularCategories = ALL_CATEGORIES.slice(0, POPULAR_CATEGORY_LIMIT);
+    
+    return popularCategories.map(category => ({
+      params: {
+        slug: category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
+      },
+      props: { category }
+    }));
+  }
+  
+  // In development, still generate all paths for testing
   return ALL_CATEGORIES.map(category => ({
     params: {
       slug: category.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')

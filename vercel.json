@@ -1,0 +1,28 @@
+{
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/category/(?<slug>[^/]+)",
+      "dest": "/category/[slug]"
+    },
+    {
+      "src": "/category/(?<slug>[^/]+)/?$",
+      "dest": "/category/[slug]"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "@vercel/static"
+}
